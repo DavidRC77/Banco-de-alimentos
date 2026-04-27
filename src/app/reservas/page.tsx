@@ -20,12 +20,14 @@ export default function ReservasPage() {
   const [canchaId, setCanchaId] = useState("");
   const [fecha, setFecha] = useState("");
   const [horaInicio, setHoraInicio] = useState("");
+  const [monto, setMonto] = useState("");
+  const [estadoPago, setEstadoPago] = useState("pendiente");
 
   const [mensaje, setMensaje] = useState({ tipo: "", texto: "" });
   const [loading, setLoading] = useState(false);
 
   const horasDisponibles = [
-    "08:00", "09:00", "10:00", "11:00",
+    "08:00", "09:00", "10:00", "11:00","12:00","13:00",
     "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"
   ];
 
@@ -62,7 +64,7 @@ export default function ReservasPage() {
   const canchaSeleccionada = canchas.find((c) => c.id.toString() === canchaId);
 
   const handleSubmit = async () => {
-    if (!clienteId || !canchaId || !fecha || !horaInicio) {
+    if (!clienteId || !canchaId || !fecha || !horaInicio || !monto) {
       setMensaje({ tipo: "error", texto: "Por favor, completa todos los campos." });
       return;
     }
@@ -76,7 +78,9 @@ export default function ReservasPage() {
       cancha_id: parseInt(canchaId),
       fecha: fecha,
       hora_inicio: `${horaInicio}:00`,
-      hora_fin: horaFin
+      hora_fin: horaFin,
+      monto: parseFloat(monto),
+      estado_pago: estadoPago
     };
 
     try {
@@ -91,11 +95,16 @@ export default function ReservasPage() {
       if (!res.ok) {
         setMensaje({ tipo: "error", texto: data.error || "Error al crear la reserva." });
       } else {
-        setMensaje({ tipo: "success", texto: "¡Reserva confirmada con éxito!" });
+        setMensaje({ 
+          tipo: "success", 
+          texto: `¡Reserva confirmada! Estado de pago: ${estadoPago === 'pagado' ? 'PAGADO' : 'PENDIENTE'}` 
+        });
         setClienteId("");
         setCanchaId("");
         setFecha("");
         setHoraInicio("");
+        setMonto("");
+        setEstadoPago("pendiente");
       }
     } catch (error) {
       setMensaje({ tipo: "error", texto: "Error de conexión con el servidor." });
@@ -176,6 +185,31 @@ export default function ReservasPage() {
               </div>
             </div>
 
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Monto (Bs.)</label>
+                <input
+                  type="number"
+                  value={monto}
+                  onChange={(e) => setMonto(e.target.value)}
+                  placeholder="Ejemplo: 120"
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-2">Estado de Pago</label>
+                <select
+                  value={estadoPago}
+                  onChange={(e) => setEstadoPago(e.target.value)}
+                  className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-slate-700 bg-white"
+                >
+                  <option value="pendiente">Pendiente</option>
+                  <option value="pagado">Pagado</option>
+                </select>
+              </div>
+            </div>
+
             <div className="flex justify-end pt-8">
               <button
                 onClick={handleSubmit}
@@ -210,6 +244,18 @@ export default function ReservasPage() {
             <div>
               <p className="text-sm text-slate-500 mb-1">Hora</p>
               <p className="font-bold text-slate-900">{horaInicio ? `${horaInicio} a ${(parseInt(horaInicio.split(":")[0]) + 1).toString().padStart(2, "0")}:00` : "-"}</p>
+            </div>
+
+            <div>
+              <p className="text-sm text-slate-500 mb-1">Monto</p>
+              <p className="font-bold text-slate-900">{monto ? `Bs. ${monto}` : "-"}</p>
+            </div>
+
+            <div>
+              <p className="text-sm text-slate-500 mb-1">Estado de Pago</p>
+              <p className={`font-bold text-lg ${estadoPago === 'pagado' ? 'text-green-600' : 'text-orange-600'}`}>
+                {estadoPago === 'pagado' ? '✓ PAGADO' : '⏳ PENDIENTE'}
+              </p>
             </div>
           </div>
         </div>

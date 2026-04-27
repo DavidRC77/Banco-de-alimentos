@@ -5,6 +5,10 @@ import { useEffect, useState } from "react";
 interface Cancha {
     id: number;
     nombre: string;
+    estado?: string;
+    fecha_mantenimiento?: string;
+    hora_inicio_mantenimiento?: string;
+    hora_fin_mantenimiento?: string;
 }
 
 interface Reserva {
@@ -17,7 +21,7 @@ interface Reserva {
 export default function DisponibilidadPage() {
     const [canchas, setCanchas] = useState<Cancha[]>([]);
     const [reservas, setReservas] = useState<Reserva[]>([]);
-    const [fecha, setFecha] = useState("2026-04-24");
+    const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0]);
     const [loading, setLoading] = useState(true);
 
     const horas = [
@@ -32,7 +36,7 @@ export default function DisponibilidadPage() {
             try {
                 const [resCanchas, resReservas] = await Promise.all([
                     fetch("http://localhost:3001/api/canchas"),
-                    fetch("http://localhost:3001/api/reservas")
+                    fetch("http://localhost:3001/api/reservas?all=true")
                 ]);
 
                 if (!resCanchas.ok || !resReservas.ok) {
@@ -52,13 +56,23 @@ export default function DisponibilidadPage() {
         fetchData();
     }, []);
 
-    const getEstado = (canchaId: number, hora: string) => {
-        if (canchaId === 4 && (hora === "08:00" || hora === "09:00" || hora === "10:00")) {
-            return "Mant.";
+    const getEstado = (cancha: Cancha, hora: string) => {
+        // Verificar si está en mantenimiento
+        if (cancha.estado === 'mantenimiento' && cancha.fecha_mantenimiento === fecha) {
+            if (cancha.hora_inicio_mantenimiento && cancha.hora_fin_mantenimiento) {
+                const horaNum = parseInt(hora.split(':')[0]);
+                const horaInicioNum = parseInt(cancha.hora_inicio_mantenimiento.split(':')[0]);
+                const horaFinNum = parseInt(cancha.hora_fin_mantenimiento.split(':')[0]);
+
+                if (horaNum >= horaInicioNum && horaNum < horaFinNum) {
+                    return "Mant.";
+                }
+            }
         }
 
+        // Verificar si está reservado
         const estaReservado = reservas.find(
-            (r) => r.cancha_id === canchaId && r.fecha === fecha && r.hora_inicio.startsWith(hora)
+            (r) => r.cancha_id === cancha.id && r.fecha === fecha && r.hora_inicio.startsWith(hora)
         );
 
         return estaReservado ? "Ocupado" : "Libre";
@@ -67,6 +81,7 @@ export default function DisponibilidadPage() {
     const getStyle = (estado: string) => {
         if (estado === "Libre") return "bg-green-100 text-green-700 border-green-200";
         if (estado === "Ocupado") return "bg-blue-100 text-blue-700 border-blue-200";
+        if (estado === "Pendiente") return "bg-orange-100 text-orange-700 border-orange-200";
         return "bg-orange-100 text-orange-700 border-orange-200";
     };
 
@@ -130,7 +145,7 @@ export default function DisponibilidadPage() {
                                             {cancha.nombre}
                                         </td>
                                         {horas.map((hora) => {
-                                            const estado = getEstado(cancha.id, hora);
+                                            const estado = getEstado(cancha, hora);
                                             return (
                                                 <td key={`${cancha.id}-${hora}`} className="p-0">
                                                     <div className={`h-12 min-w-[70px] flex items-center justify-center rounded-lg border text-[10px] font-bold uppercase transition-all shadow-sm ${getStyle(estado)}`}>

@@ -5,6 +5,11 @@ export interface Cancha {
   nombre: string;
   tipo: string;
   ubicacion?: string;
+  estado?: string;
+  precio_por_hora?: number;
+  fecha_mantenimiento?: string;
+  hora_inicio_mantenimiento?: string;
+  hora_fin_mantenimiento?: string;
 }
 
 export const getCanchas = async (): Promise<Cancha[]> => {
@@ -56,4 +61,19 @@ export const deleteCancha = async (id: number) => {
 export const updateCancha = async (id: number, data: any) => {
   const { error } = await supabase.from("canchas").update(data).eq("id", id);
   if (error) throw error;
+};
+
+export const updateCanchaEstado = async (id: number, data: any) => {
+  const { data: result, error } = await supabase
+    .from("canchas")
+    .update(data)
+    .eq("id", id)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(`Error actualizando estado de cancha: ${error.message}`);
+  }
+
+  return result as Cancha;
 };
